@@ -1,0 +1,19 @@
+# GoPro control
+open-gopro
+
+# GPMF data parsing via GiHub
+#git clone --recursive https://github.com/urbste/py-gpmf-parser/
+#Aller dans le dossier
+#pip install .
+
+#py_gpmf_parser @ file:///var/home/E222668F/reseau/Perso/BUT_GEII_3/Sa%C3%A96%20-%20Imitation%20de%20mouvement%20/py-gpmf-parser
+
+# Robot control
+pyniryo==1.1.2
+
+# Data processing
+numpy
+pandas
+
+# Optional: Video processing
+opencv-python
