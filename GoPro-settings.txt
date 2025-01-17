@@ -1,0 +1,5 @@
+Camera Name : GP25067910
+
+Serial Number : C3464225067910
+
+Version Number : v01.46
