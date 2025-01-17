@@ -3,7 +3,7 @@ import json
 import requests
 import asyncio
 from open_gopro import * # GoPro control
-from gpmf_parser import * # GPMF parser for telemetry data
+#from gpmf_parser import * # GPMF parser for telemetry data
 from pyniryo import * # Robot control
 import numpy as np # Data processing
 import pandas as pd # Data processing
