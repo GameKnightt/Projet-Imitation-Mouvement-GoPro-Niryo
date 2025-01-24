@@ -1,0 +1,73 @@
+from pyniryo import *
+import gpmf_parser
+import time
+
+# Fonction pour lire les données GPMF depuis un fichier
+def read_gpmf_data(file_path):
+    with open(file_path, 'rb') as f:
+        data = f.read()
+    return gpmf_parser.parse(data)
+
+# Fonction pour extraire les rotations (roll, pitch, yaw) des métadonnées
+def extract_rotations(gpmf_data):
+    # ...extraction des données...
+    roll = gpmf_data['GYRO']['ROLL']
+    pitch = gpmf_data['GYRO']['PITCH']
+    yaw = gpmf_data['GYRO']['YAW']
+    return roll, pitch, yaw
+
+# Fonction pour appliquer un filtre Kalman pour lisser les données
+def apply_kalman_filter(data):
+    # ...implémentation du filtre Kalman...
+    return data
+
+# Fonction pour mapper les rotations sur les axes du robot
+def map_rotations_to_axes(roll, pitch, yaw):
+    axis_1 = roll
+    axis_2 = pitch
+    axis_3 = yaw
+    return axis_1, axis_2, axis_3
+
+# Fonction pour envoyer les commandes au robot Niryo
+def send_commands_to_robot(robot, axis_1, axis_2, axis_3):
+    # Vérification des limites des angles
+    axis_1 = max(min(axis_1, 175.0), -175.0)  # Limites du Ned 2
+    axis_2 = max(min(axis_2, 110.0), -110.0)
+    axis_3 = max(min(axis_3, 90.0), -90.0)
+    
+    # Utilisation de la commande move_joints du Ned 2
+    robot.move_joints([axis_1, axis_2, axis_3, 0.0, 0.0, 0.0])
+
+# Fonction principale
+def main():
+    # Initialiser la connexion au robot Niryo Ned 2
+    robot = NiryoRobot("172.20.193.56")  # Remplacer par l'IP de votre robot                              Changer l'adresse IP par celle de votre robot
+    robot.calibrate_auto()
+    robot.set_arm_max_velocity(100)  # Définir une vitesse maximale de 100%
+
+    # Charger les données GPMF depuis un fichier
+    gpmf_data = read_gpmf_data('path_to_gpmf_file')
+
+    while True:
+        # Extraire les rotations
+        roll, pitch, yaw = extract_rotations(gpmf_data)
+
+        # Appliquer un filtre Kalman pour lisser les données
+        roll = apply_kalman_filter(roll)
+        pitch = apply_kalman_filter(pitch)
+        yaw = apply_kalman_filter(yaw)
+
+        # Mapper les rotations sur les axes du robot
+        axis_1, axis_2, axis_3 = map_rotations_to_axes(roll, pitch, yaw)
+
+        # Envoyer les commandes au robot en temps réel
+        send_commands_to_robot(robot, axis_1, axis_2, axis_3)
+
+        # Attendre un court instant avant la prochaine itération
+        time.sleep(0.1)
+
+    # Nettoyage à la fin
+    robot.close_connection()
+
+if __name__ == "__main__":
+    main()
