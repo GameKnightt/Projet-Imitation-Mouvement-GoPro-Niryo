@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Parses the FOURCC data in GPMF stream into fields"""
 import struct
-
 import construct
 import dateutil.parser
 

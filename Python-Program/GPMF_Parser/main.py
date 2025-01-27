@@ -134,11 +134,20 @@ if __name__ == "__main__":
     
     if len(sys.argv) > 1:
         input_path = os.path.abspath(sys.argv[1])
-        if os.path.isdir(input_path):
-            process_directory(input_path)
-        elif os.path.isfile(input_path):
-            process_gopro_video(input_path)
-        else:
-            print(f"Error: {input_path} is not a valid file or directory")
     else:
-        print("Usage: python main.py [video_file_or_directory]")
+        # Chemin par défaut vers le dossier contenant les vidéos
+        input_path = os.path.join(os.path.dirname(__file__), "videos")
+        if not os.path.exists(input_path):
+            os.makedirs(input_path)
+            print(f"\nDossier 'videos' créé à : {input_path}")
+            print("Veuillez y placer vos fichiers vidéo GoPro et relancer le programme.")
+            sys.exit(1)
+            
+    if os.path.isdir(input_path):
+        process_directory(input_path)
+    elif os.path.isfile(input_path):
+        process_gopro_video(input_path)
+    else:
+        print(f"Erreur : {input_path} n'est pas un fichier ou dossier valide")
+        print("\nUtilisation : python main.py [video_file_or_directory]")
+        print("ou placez simplement vos vidéos dans le dossier 'videos'")

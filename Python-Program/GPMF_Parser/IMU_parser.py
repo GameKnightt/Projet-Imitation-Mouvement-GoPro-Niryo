@@ -131,4 +131,4 @@ if __name__ == "__main__":
             input_path = os.path.join(input_dir, json_file)
             data = get_gyro_accel_data(input_path)
             data = reorder_data(data, json_file)
-            #plot_data(data)
+            plot_data(data)
