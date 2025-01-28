@@ -7,15 +7,26 @@ from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
 
 class IMUProcessor:
+    """
+    Classe principale pour le traitement des données IMU.
+    Gère le filtrage, l'intégration et la conversion des données d'accélération en positions.
+    """
     def __init__(self, dt=0.01):
+        # dt: intervalle de temps entre les échantillons (en secondes)
         self.dt = dt
         self.kf = self._init_kalman_filter()
-        # Paramètres du filtre passe-haut
-        self.cutoff_freq = 0.1  # Fréquence de coupure à 0.1 Hz
-        self.filter_order = 2   # Ordre du filtre
+        # Configuration du filtre passe-haut pour réduire la dérive
+        self.cutoff_freq = 0.1  # Fréquence de coupure en Hz
+        self.filter_order = 2   # Ordre du filtre Butterworth
         
     def _init_kalman_filter(self):
-        """Initialize Kalman filter for 3D position tracking"""
+        """
+        Initialise le filtre de Kalman pour le suivi de position 3D.
+        État: [x, y, z, vx, vy, vz, ax, ay, az]
+        x,y,z: positions
+        vx,vy,vz: vitesses
+        ax,ay,az: accélérations
+        """
         kf = KalmanFilter(dim_x=9, dim_z=3)  # State: [x, y, z, vx, vy, vz, ax, ay, az]
         
         # State transition matrix
@@ -50,7 +61,10 @@ class IMUProcessor:
         return kf
 
     def apply_highpass_filter(self, data):
-        """Applique un filtre passe-haut Butterworth sur les données"""
+        """
+        Applique un filtre passe-haut pour éliminer la dérive basse fréquence.
+        Important pour réduire l'erreur d'intégration.
+        """
         nyquist = 1.0 / (2.0 * self.dt)
         normal_cutoff = self.cutoff_freq / nyquist
         b, a = butter(self.filter_order, normal_cutoff, btype='high', analog=False)
@@ -63,7 +77,9 @@ class IMUProcessor:
 
     def integrate_acceleration(self, accel_data):
         """
-        Intègre l'accélération filtrée deux fois pour obtenir la position
+        Double intégration de l'accélération pour obtenir la position.
+        1. Accélération → Vitesse (première intégration)
+        2. Vitesse → Position (deuxième intégration)
         """
         dt = self.dt
         time = np.arange(0, len(accel_data) * dt, dt)
@@ -120,7 +136,15 @@ class IMUProcessor:
         return filtered_data
 
 def convert_to_robot_format(imu_data, sampling_rate=1.0):
-    """Convert IMU data to Niryo robot format"""
+    """
+    Convertit les données IMU en format compatible avec le robot Niryo.
+    
+    Étapes:
+    1. Extraction des données accéléromètre et gyroscope
+    2. Traitement des accélérations pour obtenir les positions
+    3. Conversion en coordonnées robot (x, y, z, roll, pitch, yaw)
+    4. Normalisation et ajustement aux limites du robot
+    """
     processor = IMUProcessor()
     
     # Extract acceleration and gyro data from the correct structure
@@ -188,7 +212,7 @@ def convert_to_robot_format(imu_data, sampling_rate=1.0):
         
         # Convert to robot movements
         movements = {}
-        step = int(1.0/sampling_rate/0.01)
+        step = int(1.0/sampling_rate/0.05)  # Réduire le pas pour plus de mouvements
         
         print(f"DEBUG: Processing {len(positions)} positions and {len(gyro_data)} gyro data points")
         
@@ -201,17 +225,17 @@ def convert_to_robot_format(imu_data, sampling_rate=1.0):
                     
                     # Conversion en mètres (au lieu de millimètres)
                     # Les positions sont normalisées entre -1 et 1 puis ajustées à la zone de travail du robot
-                    pos_x = float(pos[0]) / 1000.0  # Conversion en mètres
-                    pos_y = float(pos[1]) / 1000.0
-                    pos_z = float(pos[2]) / 1000.0
+                    pos_x = float(pos[0]) / 100.0  # Changer 1000.0 à 100.0 pour plus d'amplitude
+                    pos_y = float(pos[1]) / 100.0
+                    pos_z = float(pos[2]) / 100.0
                 else:
                     print(f"Warning: Invalid position data at index {i}: {pos}")
                     continue
 
                 # Ajustement aux limites de l'espace de travail du Niryo
-                x = np.clip(pos_x, -0.5, 0.5)  # Limites en mètres
-                y = np.clip(pos_y, -0.5, 0.5)
-                z = np.clip(pos_z, 0.1, 0.5)
+                x = np.clip(pos_x, -0.3, 0.3)  # Ajuster les limites selon l'espace de travail réel
+                y = np.clip(pos_y, -0.3, 0.3)  # du robot (-0.5, 0.5 était peut-être trop restrictif)
+                z = np.clip(pos_z, 0.2, 0.4)   # Ajuster la hauteur de travail
                 
                 # Conversion des angles du gyroscope en radians
                 # On garde les angles en radians au lieu de les convertir en degrés
@@ -260,7 +284,10 @@ def convert_to_robot_format(imu_data, sampling_rate=1.0):
         raise
 
 def save_movements_to_json(movements, filename_base):
-    """Save processed movements to JSON file"""
+    """
+    Sauvegarde les mouvements traités dans un fichier JSON.
+    Le fichier sera utilisé par le programme de contrôle du robot.
+    """
     # Créer le dossier s'il n'existe pas
     output_dir = os.path.join(os.path.dirname(__file__), "3-Json-adapt-niryo-movement")
     os.makedirs(output_dir, exist_ok=True)

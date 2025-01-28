@@ -54,7 +54,15 @@ def ensure_directories():
     return created_dirs
 
 def process_gopro_video(video_path, output_path=None):
-    """Process a GoPro video through all steps"""
+    """
+    Traitement complet d'une vidéo GoPro.
+    
+    Étapes:
+    1. Extraction des données GPMF de la vidéo
+    2. Traitement des données IMU (accéléromètre et gyroscope)
+    3. Conversion en mouvements robot
+    4. Sauvegarde des résultats
+    """
     try:
         print("\n=== 🎥 Starting Video Processing ===")
         print(f"📽️ Processing video: {os.path.basename(video_path)}")
@@ -128,6 +136,35 @@ def process_directory(input_dir):
     print(f"❌ Failed: {failed_count}")
     return success_count, failed_count
 
+def select_video(input_dir):
+    """
+    Interface utilisateur pour la sélection de la vidéo à traiter.
+    Affiche la liste des vidéos disponibles et permet à l'utilisateur de choisir.
+    """
+    videos = [f for f in os.listdir(input_dir) if f.lower().endswith(('.mp4', '.mov'))]
+    
+    if not videos:
+        print("\nAucune vidéo trouvée dans le dossier.")
+        return None
+    
+    print("\n=== Vidéos disponibles ===")
+    for i, video in enumerate(videos, 1):
+        print(f"{i}. {video}")
+    
+    while True:
+        try:
+            choice = input("\nChoisissez le numéro de la vidéo à analyser (ou 'q' pour quitter) : ")
+            if choice.lower() == 'q':
+                return None
+            
+            index = int(choice) - 1
+            if 0 <= index < len(videos):
+                return os.path.join(input_dir, videos[index])
+            else:
+                print("Choix invalide. Veuillez réessayer.")
+        except ValueError:
+            print("Veuillez entrer un numéro valide.")
+
 if __name__ == "__main__":
     # Afficher l'introduction avant de commencer
     display_intro()
@@ -142,9 +179,13 @@ if __name__ == "__main__":
             print(f"\nDossier 'videos' créé à : {input_path}")
             print("Veuillez y placer vos fichiers vidéo GoPro et relancer le programme.")
             sys.exit(1)
-            
+    
     if os.path.isdir(input_path):
-        process_directory(input_path)
+        selected_video = select_video(input_path)
+        if selected_video:
+            process_gopro_video(selected_video)
+        else:
+            print("Aucune vidéo sélectionnée. Programme terminé.")
     elif os.path.isfile(input_path):
         process_gopro_video(input_path)
     else:
